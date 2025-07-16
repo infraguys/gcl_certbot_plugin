@@ -16,11 +16,11 @@
 
 import logging
 
-from gcl_iam.tests.functional import clients as iam_clients
-
-
 from certbot import errors
 from certbot.plugins import dns_common
+from gcl_sdk.clients.http import base as core_client_base
+
+from gcl_certbot_plugin import clients as dns_clients
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -44,7 +44,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         add(
             "endpoint",
             help="Core API endpoint.",
-            default="http://core.local.genesis-core.tech:11010/v1",
+            default="http://core.local.genesis-core.tech:11010",
         )
         add("login", help="Core API login.")
         add("password", help="Core API password.")
@@ -54,69 +54,30 @@ class Authenticator(dns_common.DNSAuthenticator):
             raise errors.MisconfigurationError(
                 "Credentials are not configured, please set --genesis-core-login and --genesis-core-password"
             )
-        auth = iam_clients.GenesisCoreAuth(
-            username=self.conf("login"), password=self.conf("password")
+        auth = core_client_base.CoreIamAuthenticator(
+            self.conf("endpoint"), self.conf("login"), self.conf("password")
         )
-
-        self.client = iam_clients.GenesisCoreTestRESTClient(
-            endpoint=self.conf("endpoint"), auth=auth
+        self.dns_client = dns_clients.TinyDNSCoreClient(
+            base_url=self.conf("endpoint"), auth=auth
         )
 
         # Check credentials here to minimize other requests.
-        url = self.client.build_collection_uri(["dns", "domains"])
-        self.client.get(url)
+        domains_collection = "/v1/dns/domains/"
+        self.dns_client.domains.filter(domains_collection)
 
     def more_info(self):
         return "This plugin uses integrated Genesis Core DNS server to perform DNS-01 checks."
 
     def _perform(self, domain, validation_name, validation):
-        url = self.client.build_collection_uri(["dns", "domains"])
-        zone = None
-        parent_domain = domain
-        # Try to find target zone iteratively.
-        while parent_domain:
-            try:
-                parent_domain = parent_domain.split(".", 1)[1]
-            except IndexError:
-                break
-
-            response = self.client.get(
-                url, params={"name": parent_domain}
-            ).json()
-            if response:
-                zone = response[0]
-                break
-        if not zone:
-            raise errors.PluginError(
-                "Could not find DNS zone for domain %s" % domain
-            )
-
-        self._zone_uuid = zone["uuid"]
-
-        data = {
-            "type": "TXT",
-            "ttl": 0,
-            "record": {
-                "kind": "TXT",
-                "name": validation_name.removesuffix(f".{zone['name']}"),
-                "content": validation,
-            },
-        }
-
-        url = self.client.build_collection_uri(
-            ["dns", "domains", self._zone_uuid, "records"]
+        record = self.dns_client.create_txt_record(
+            domain, validation, "_acme-challenge"
         )
 
-        record = self.client.post(url, json=data).json()
-
+        self._zone_uuid = record["domain"].split("/")[-1]
         self._record_uuid = record["uuid"]
 
     def _cleanup(self, domain, validation_name, validation):
         if not self._zone_uuid or not self._record_uuid:
             return
 
-        url = self.client.build_resource_uri(
-            ["dns", "domains", self._zone_uuid, "records", self._record_uuid]
-        )
-
-        self.client.delete(url)
+        self.dns_client.delete_record(self._zone_uuid, self._record_uuid)
