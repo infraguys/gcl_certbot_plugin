@@ -33,8 +33,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def __init__(self, *args, **kwargs):
         super(Authenticator, self).__init__(*args, **kwargs)
 
-        self._zone_uuid = None
-        self._record_uuid = None
+        self._records_to_cleanup_map = {}
 
     @classmethod
     def add_parser_arguments(cls, add):  # pylint: disable=arguments-differ
@@ -73,11 +72,15 @@ class Authenticator(dns_common.DNSAuthenticator):
             domain, validation, "_acme-challenge"
         )
 
-        self._zone_uuid = record["domain"].split("/")[-1]
-        self._record_uuid = record["uuid"]
+        self._records_to_cleanup_map[(domain, validation_name, validation)] = (
+            record
+        )
 
     def _cleanup(self, domain, validation_name, validation):
-        if not self._zone_uuid or not self._record_uuid:
-            return
+        record = self._records_to_cleanup_map.pop(
+            (domain, validation_name, validation)
+        )
 
-        self.dns_client.delete_record(self._zone_uuid, self._record_uuid)
+        self.dns_client.delete_record(
+            record["domain"].split("/")[-1], record["uuid"]
+        )
