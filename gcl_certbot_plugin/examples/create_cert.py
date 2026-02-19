@@ -23,7 +23,6 @@ from gcl_sdk.clients.http import base as core_client_base
 from gcl_certbot_plugin import acme
 from gcl_certbot_plugin import clients as dns_clients
 
-
 DEFAULT_PRIVATE_KEY_PATH = "/etc/genesis_core/certbot/privkey.pem"
 
 
