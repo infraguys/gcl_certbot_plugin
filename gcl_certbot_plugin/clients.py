@@ -58,13 +58,9 @@ class TinyDNSCoreClient:
             try:
                 parent_domain = parent_domain.split(".", 1)[1]
             except IndexError:
-                raise ValueError(
-                    f"Could not find DNS zone for domain {domain}"
-                )
+                raise ValueError(f"Could not find DNS zone for domain {domain}")
 
-            domains = self.domains.filter(
-                domains_collection, name=parent_domain
-            )
+            domains = self.domains.filter(domains_collection, name=parent_domain)
             if domains:
                 name = domain[: -len(parent_domain)]
                 zone = domains[0]
@@ -83,11 +79,9 @@ class TinyDNSCoreClient:
             },
         }
 
-        records_collection = f"/v1/dns/domains/{zone["uuid"]}/records/"
+        records_collection = f"/v1/dns/domains/{zone['uuid']}/records/"
         return self.records.create(records_collection, data)
 
-    def delete_record(
-        self, domain: sys_uuid.UUID, record: sys_uuid.UUID
-    ) -> None:
+    def delete_record(self, domain: sys_uuid.UUID, record: sys_uuid.UUID) -> None:
         records_collection = f"/v1/dns/domains/{domain}/records/"
         self.records.delete(records_collection, record)

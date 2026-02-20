@@ -88,9 +88,7 @@ if __name__ == "__main__":
     auth = core_client_base.CoreIamAuthenticator(
         args.endpoint, args.core_user, args.core_password
     )
-    dns_client = dns_clients.TinyDNSCoreClient(
-        base_url=args.endpoint, auth=auth
-    )
+    dns_client = dns_clients.TinyDNSCoreClient(base_url=args.endpoint, auth=auth)
 
     print(f"Issue a cert for domains: {domains}")
 

@@ -27,7 +27,6 @@ logger.setLevel(logging.DEBUG)
 
 
 class Authenticator(dns_common.DNSAuthenticator):
-
     description = "Obtain certificates with Genesis Core DNS server"
 
     def __init__(self, *args, **kwargs):
@@ -72,15 +71,9 @@ class Authenticator(dns_common.DNSAuthenticator):
             domain, validation, "_acme-challenge"
         )
 
-        self._records_to_cleanup_map[(domain, validation_name, validation)] = (
-            record
-        )
+        self._records_to_cleanup_map[(domain, validation_name, validation)] = record
 
     def _cleanup(self, domain, validation_name, validation):
-        record = self._records_to_cleanup_map.pop(
-            (domain, validation_name, validation)
-        )
+        record = self._records_to_cleanup_map.pop((domain, validation_name, validation))
 
-        self.dns_client.delete_record(
-            record["domain"].split("/")[-1], record["uuid"]
-        )
+        self.dns_client.delete_record(record["domain"].split("/")[-1], record["uuid"])
