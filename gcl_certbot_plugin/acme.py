@@ -117,9 +117,7 @@ def new_csr_comp(
     """Create certificate signing request."""
     if pkey_pem is None:
         # Create private key.
-        pkey = rsa.generate_private_key(
-            public_exponent=65537, key_size=CERT_PKEY_BITS
-        )
+        pkey = rsa.generate_private_key(public_exponent=65537, key_size=CERT_PKEY_BITS)
         pkey_pem = pkey.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
@@ -178,9 +176,7 @@ def dns_records_for_challenge(
 
     # Go to Core DNS and add TXT record
     for domain in domains_for_challenge:
-        record = dns_client.create_txt_record(
-            domain, validation, "_acme-challenge"
-        )
+        record = dns_client.create_txt_record(domain, validation, "_acme-challenge")
         records.append(record)
 
     return records
@@ -201,13 +197,9 @@ def perform_dns01(
     try:
         for challb in challbs:
             # Get DNS-01 challenge
-            response, validation = challb.response_and_validation(
-                acme_client.net.key
-            )
+            response, validation = challb.response_and_validation(acme_client.net.key)
 
-            records += dns_records_for_challenge(
-                domains, dns_client, validation
-            )
+            records += dns_records_for_challenge(domains, dns_client, validation)
 
             # Let the CA server know that we are ready for the challenge.
             acme_client.answer_challenge(challb, response)
@@ -241,9 +233,7 @@ def create_cert(
     challbs = select_dns01_chall(orderr)
 
     # The certificate is ready to be used in the variable "fullchain_pem".
-    fullchain_pem = perform_dns01(
-        domains, acme_client, dns_client, challbs, orderr
-    )
+    fullchain_pem = perform_dns01(domains, acme_client, dns_client, challbs, orderr)
 
     return pkey_pem, csr_pem, fullchain_pem
 
@@ -260,16 +250,12 @@ def renew_cert(
     challbs = select_dns01_chall(orderr)
 
     # Performing challenge
-    fullchain_pem = perform_dns01(
-        domains, acme_client, dns_client, challbs, orderr
-    )
+    fullchain_pem = perform_dns01(domains, acme_client, dns_client, challbs, orderr)
 
     return pkey_pem, csr_pem, fullchain_pem
 
 
-def revoke_cert(
-    acme_client: acme_lib_client.ClientV2, fullchain_pem: str
-) -> None:
+def revoke_cert(acme_client: acme_lib_client.ClientV2, fullchain_pem: str) -> None:
     """Revoke the certificate."""
     fullchain_com = x509.load_pem_x509_certificate(fullchain_pem.encode())
 
