@@ -118,7 +118,7 @@ line-ending = "auto"
 [tool.setuptools.packages.find]
 where = ["."]
 
-[project.scripts]
+[project.entry-points."certbot.plugins"]
 genesis-core = "gcl_certbot_plugin.plugin:Authenticator"
 
 [tool.uv]
